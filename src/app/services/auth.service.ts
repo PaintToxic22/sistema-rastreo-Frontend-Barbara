@@ -55,7 +55,6 @@ export class AuthService {
         }
       }),
       catchError(error => {
-        console.error('Error login:', error);
         throw error;
       })
     );
@@ -89,7 +88,10 @@ export class AuthService {
   }
 
   estaAutenticado(): boolean {
-    return !!this.obtenerToken();
+    const token = localStorage.getItem('token');
+    const usuario = localStorage.getItem('usuario');
+    const autenticado = !!token && !!usuario;
+    return autenticado;
   }
 
   obtenerRol(): string | null {
@@ -98,6 +100,7 @@ export class AuthService {
 
   tienePermiso(rol: string | string[]): boolean {
     const rolesPermitidos = Array.isArray(rol) ? rol : [rol];
-    return rolesPermitidos.includes(this.obtenerRol() || '');
+    const resultado = rolesPermitidos.includes(this.obtenerRol() || '');
+    return resultado;
   }
 }
