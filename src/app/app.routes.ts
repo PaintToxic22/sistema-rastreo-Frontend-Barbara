@@ -5,12 +5,11 @@ import { LoginComponent } from './components/login/login';
 import { OperadorPanelComponent } from './components/operador/panel/panel';
 import { TrackingComponent } from './components/usuario/tracking/tracking';
 import { AuthGuard } from './guards/auth.guard';
-import { LoginGuard } from './guards/login.guard';
 
 export const routes: Routes = [
-  { path: 'login', component: LoginComponent, canActivate: [LoginGuard] },
+  { path: 'login', component: LoginComponent },
   { path: '', redirectTo: '/login', pathMatch: 'full' },
-  { path: 'tracking', component: TrackingComponent, canActivate: [AuthGuard] },
+  { path: 'tracking', component: TrackingComponent },
   
   { 
     path: 'usuario/tracking',
