@@ -24,7 +24,7 @@ export interface LoginResponse {
 })
 export class AuthService {
   private apiUrl = 'http://localhost:3000/api';
-  
+
   currentUser = signal<Usuario | null>(null);
   isLoggedIn = signal<boolean>(false);
   token = signal<string | null>(null);
@@ -52,6 +52,7 @@ export class AuthService {
           localStorage.setItem('token', response.token);
           localStorage.setItem('usuario', JSON.stringify(response.usuario));
           this.isLoggedIn.set(true);
+          console.log('✅ Login exitoso:', response.usuario);
         }
       }),
       catchError(error => {
@@ -85,11 +86,16 @@ export class AuthService {
       this.currentUser.set(usuarioParsed);
       this.usuarioSubject.next(usuarioParsed);
       this.isLoggedIn.set(true);
+      console.log('✅ Usuario cargado desde localStorage:', usuarioParsed);
     }
   }
 
   estaAutenticado(): boolean {
-    return !!this.obtenerToken();
+    const token = this.obtenerToken();
+    const usuario = this.currentUser();
+    const autenticado = !!token && !!usuario;
+    console.log('🔐 ¿Autenticado?', autenticado, '| Token:', !!token, '| Usuario:', !!usuario);
+    return autenticado;
   }
 
   obtenerRol(): string | null {
@@ -98,6 +104,8 @@ export class AuthService {
 
   tienePermiso(rol: string | string[]): boolean {
     const rolesPermitidos = Array.isArray(rol) ? rol : [rol];
-    return rolesPermitidos.includes(this.obtenerRol() || '');
+    const resultado = rolesPermitidos.includes(this.obtenerRol() || '');
+    console.log('👥 ¿Tiene permiso?', resultado, '| Rol usuario:', this.obtenerRol(), '| Roles permitidos:', rolesPermitidos);
+    return resultado;
   }
 }
