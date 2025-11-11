@@ -91,8 +91,8 @@ export class AuthService {
   }
 
   estaAutenticado(): boolean {
-    const token = this.obtenerToken();
-    const usuario = this.currentUser();
+    const token = localStorage.getItem('token');
+    const usuario = localStorage.getItem('usuario');
     const autenticado = !!token && !!usuario;
     console.log('🔐 ¿Autenticado?', autenticado, '| Token:', !!token, '| Usuario:', !!usuario);
     return autenticado;
