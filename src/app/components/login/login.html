@@ -1,0 +1,85 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <h1>LonquiExpress</h1>
+      <p>Sistema de Gestión de Encomiendas</p>
+    </div>
+
+    <form [formGroup]="formLogin" (ngSubmit)="onSubmit()">
+      <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input 
+          type="email" 
+          class="form-control" 
+          id="email"
+          formControlName="email"
+          placeholder="usuario@lonquiexpress.cl"
+        >
+        <small class="text-danger" *ngIf="formLogin.get('email')?.invalid && formLogin.get('email')?.touched">
+          Email inválido
+        </small>
+      </div>
+
+      <div class="mb-3">
+        <label for="password" class="form-label">Contraseña</label>
+        <input 
+          type="password" 
+          class="form-control" 
+          id="password"
+          formControlName="password"
+          placeholder="Contraseña"
+        >
+        <small class="text-danger" *ngIf="formLogin.get('password')?.invalid && formLogin.get('password')?.touched">
+          Contraseña requerida
+        </small>
+      </div>
+
+      <div *ngIf="error" class="alert alert-danger">
+        {{ error }}
+      </div>
+
+      <button 
+        type="submit" 
+        class="btn btn-primary w-100"
+        [disabled]="formLogin.invalid || loading"
+      >
+        <span *ngIf="!loading">Ingresar</span>
+        <span *ngIf="loading">
+          <span class="spinner-border spinner-border-sm me-2"></span>
+          Cargando...
+        </span>
+      </button>
+    </form>
+
+    <div class="login-footer">
+      <p><strong>Cuentas de prueba:</strong></p>
+      <table class="table table-sm table-striped">
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Rol</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>admin@lonquiexpress.cl</td>
+            <td><span class="badge bg-danger">Admin</span></td>
+          </tr>
+          <tr>
+            <td>operador@lonquiexpress.cl</td>
+            <td><span class="badge bg-warning">Operador</span></td>
+          </tr>
+          <tr>
+            <td>chofer@lonquiexpress.cl</td>
+            <td><span class="badge bg-info">Chofer</span></td>
+          </tr>
+          <tr>
+            <td>usuario@lonquiexpress.cl</td>
+            <td><span class="badge bg-success">Usuario</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="text-muted mt-2">Contraseña: <code>admin123</code></p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,576 @@
+<div class="admin-container">
+  <div class="row g-0">
+    <!-- SIDEBAR -->
+    <div class="col-md-2 sidebar">
+      <div class="logo-section">
+        <i class="fas fa-truck"></i>
+        <h5>LonquiExpress</h5>
+        <small>Panel Admin</small>
+      </div>
+
+      <nav class="menu">
+        <a class="menu-item" 
+           [ngClass]="{'active': seccion === 'dashboard'}" 
+           (click)="mostrarSeccion('dashboard')" 
+           href="#">
+          <i class="fas fa-tachometer-alt"></i>
+          <span>Dashboard</span>
+        </a>
+        <a class="menu-item" 
+           [ngClass]="{'active': seccion === 'encomiendas'}"
+           (click)="mostrarSeccion('encomiendas')" 
+           href="#">
+          <i class="fas fa-box"></i>
+          <span>Encomiendas</span>
+        </a>
+        <a class="menu-item" 
+           [ngClass]="{'active': seccion === 'reportes'}"
+           (click)="mostrarSeccion('reportes')" 
+           href="#">
+          <i class="fas fa-chart-bar"></i>
+          <span>Reportes</span>
+        </a>
+        <a class="menu-item" 
+           [ngClass]="{'active': seccion === 'usuarios'}"
+           (click)="mostrarSeccion('usuarios')" 
+           href="#">
+          <i class="fas fa-users"></i>
+          <span>Usuarios</span>
+        </a>
+        <a class="menu-item" 
+           [ngClass]="{'active': seccion === 'configuracion'}"
+           (click)="mostrarSeccion('configuracion')" 
+           href="#">
+          <i class="fas fa-cog"></i>
+          <span>Configuración</span>
+        </a>
+      </nav>
+
+      <button class="btn-logout" (click)="logout()">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Salir</span>
+      </button>
+    </div>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <div class="col-md-10 main-content">
+      <!-- HEADER -->
+      <div class="header">
+        <h2>Panel Administrativo</h2>
+        <p>Gestión completa del sistema</p>
+      </div>
+
+      <!-- ===== DASHBOARD SECTION ===== -->
+      <div *ngIf="seccion === 'dashboard'">
+        <!-- ESTADÍSTICAS -->
+        <div class="stats-grid">
+          <div class="stat-card stat-1">
+            <div class="stat-icon">
+              <i class="fas fa-box fa-2x"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ estadisticas.total }}</h3>
+              <p>Encomiendas</p>
+            </div>
+          </div>
+
+          <div class="stat-card stat-2">
+            <div class="stat-icon">
+              <i class="fas fa-truck fa-2x"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ estadisticas.en_transito }}</h3>
+              <p>En Tránsito</p>
+            </div>
+          </div>
+
+          <div class="stat-card stat-3">
+            <div class="stat-icon">
+              <i class="fas fa-exclamation fa-2x"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ estadisticas.incidencias }}</h3>
+              <p>Incidencias</p>
+            </div>
+          </div>
+
+          <div class="stat-card stat-4">
+            <div class="stat-icon">
+              <i class="fas fa-check fa-2x"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ estadisticas.entregadas }}</h3>
+              <p>Entregadas</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ENCOMIENDAS RECIENTES -->
+        <div class="card mt-4">
+          <div class="card-header">
+            <h5 class="mb-0">Encomiendas Recientes</h5>
+          </div>
+          <div class="card-body">
+            <div *ngIf="loading" class="spinner"></div>
+
+            <div *ngIf="!loading && encomiendas.length === 0" class="alert alert-info">
+              No hay encomiendas registradas
+            </div>
+
+            <div *ngIf="!loading && encomiendas.length > 0" class="table-responsive">
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>Código</th>
+                    <th>Remitente</th>
+                    <th>Destinatario</th>
+                    <th>Valor</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let e of encomiendas.slice(0, 5)">
+                    <td><strong>{{ e.codigoSeguimiento }}</strong></td>
+                    <td>{{ e.remitente?.nombre || 'N/A' }}</td>
+                    <td>{{ e.destinatario?.nombre || 'N/A' }}</td>
+                    <td>${{ e.valor | number: '1.0-0' }}</td>
+                    <td>
+                      <span class="badge" [ngClass]="getEstadoBadge(e.estado)">
+                        {{ e.estado }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== ENCOMIENDAS SECTION ===== -->
+      <div *ngIf="seccion === 'encomiendas'">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">Todas las Encomiendas</h5>
+          </div>
+          <div class="card-body">
+            <div *ngIf="loading" class="spinner"></div>
+
+            <div *ngIf="!loading && encomiendas.length === 0" class="alert alert-info">
+              No hay encomiendas registradas
+            </div>
+
+            <div *ngIf="!loading && encomiendas.length > 0" class="table-responsive">
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>Código</th>
+                    <th>Remitente</th>
+                    <th>Destinatario</th>
+                    <th>Valor</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let e of encomiendas">
+                    <td><strong>{{ e.codigoSeguimiento }}</strong></td>
+                    <td>{{ e.remitente?.nombre || 'N/A' }}</td>
+                    <td>{{ e.destinatario?.nombre || 'N/A' }}</td>
+                    <td>${{ e.valor | number: '1.0-0' }}</td>
+                    <td>
+                      <span class="badge" [ngClass]="getEstadoBadge(e.estado)">
+                        {{ e.estado }}
+                      </span>
+                    </td>
+                    <td>
+                      <button class="btn btn-sm btn-primary" title="Ver detalles">
+                        <i class="fas fa-eye"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== REPORTES SECTION ===== -->
+      <div *ngIf="seccion === 'reportes'">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">Reportes y Estadísticas</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <h6>Resumen General</h6>
+                <ul class="list-unstyled">
+                  <li><strong>Total de Encomiendas:</strong> {{ estadisticas.total }}</li>
+                  <li><strong>En Tránsito:</strong> {{ estadisticas.en_transito }}</li>
+                  <li><strong>Entregadas:</strong> {{ estadisticas.entregadas }}</li>
+                  <li><strong>Incidencias:</strong> {{ estadisticas.incidencias }}</li>
+                </ul>
+              </div>
+              <div class="col-md-6">
+                <h6>Gráficos</h6>
+                <p class="text-muted">Próximamente: Gráficos de estadísticas</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== USUARIOS SECTION ===== -->
+      <div *ngIf="seccion === 'usuarios'">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">Gestión de Usuarios</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-12">
+                <h6>Usuarios del Sistema</h6>
+                <div class="alert alert-info">
+                  <i class="fas fa-info-circle"></i>
+                  Módulo de gestión de usuarios en desarrollo
+                </div>
+                <p class="text-muted">Aquí puedes administrar usuarios, roles y permisos del sistema.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== CONFIGURACION SECTION ===== -->
+      <div *ngIf="seccion === 'configuracion'">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">Configuración del Sistema</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <h6>Configuración General</h6>
+                <form>
+                  <div class="mb-3">
+                    <label class="form-label">Nombre de la Empresa</label>
+                    <input type="text" class="form-control" value="LonquiExpress" disabled>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Email de Contacto</label>
+                    <input type="email" class="form-control" value="info@lonquiexpress.cl" disabled>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Teléfono</label>
+                    <input type="tel" class="form-control" value="+56912345678" disabled>
+                  </div>
+                </form>
+              </div>
+              <div class="col-md-6">
+                <h6>Información del Sistema</h6>
+                <ul class="list-unstyled">
+                  <li><strong>Versión:</strong> 1.0.0</li>
+                  <li><strong>Estado:</strong> <span class="badge bg-success">Activo</span></li>
+                  <li><strong>Base de Datos:</strong> MongoDB</li>
+                  <li><strong>Framework:</strong> Angular 20</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+EOF
+cat /mnt/user-data/outputs/admin-html-completo.html
+Salida
+
+<div class="admin-container">
+  <div class="row g-0">
+    <!-- SIDEBAR -->
+    <div class="col-md-2 sidebar">
+      <div class="logo-section">
+        <i class="fas fa-truck"></i>
+        <h5>LonquiExpress</h5>
+        <small>Panel Admin</small>
+      </div>
+
+      <nav class="menu">
+        <a class="menu-item" 
+           [ngClass]="{'active': seccion === 'dashboard'}" 
+           (click)="mostrarSeccion('dashboard')" 
+           href="#">
+          <i class="fas fa-tachometer-alt"></i>
+          <span>Dashboard</span>
+        </a>
+        <a class="menu-item" 
+           [ngClass]="{'active': seccion === 'encomiendas'}"
+           (click)="mostrarSeccion('encomiendas')" 
+           href="#">
+          <i class="fas fa-box"></i>
+          <span>Encomiendas</span>
+        </a>
+        <a class="menu-item" 
+           [ngClass]="{'active': seccion === 'reportes'}"
+           (click)="mostrarSeccion('reportes')" 
+           href="#">
+          <i class="fas fa-chart-bar"></i>
+          <span>Reportes</span>
+        </a>
+        <a class="menu-item" 
+           [ngClass]="{'active': seccion === 'usuarios'}"
+           (click)="mostrarSeccion('usuarios')" 
+           href="#">
+          <i class="fas fa-users"></i>
+          <span>Usuarios</span>
+        </a>
+        <a class="menu-item" 
+           [ngClass]="{'active': seccion === 'configuracion'}"
+           (click)="mostrarSeccion('configuracion')" 
+           href="#">
+          <i class="fas fa-cog"></i>
+          <span>Configuración</span>
+        </a>
+      </nav>
+
+      <button class="btn-logout" (click)="logout()">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Salir</span>
+      </button>
+    </div>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <div class="col-md-10 main-content">
+      <!-- HEADER -->
+      <div class="header">
+        <h2>Panel Administrativo</h2>
+        <p>Gestión completa del sistema</p>
+      </div>
+
+      <!-- ===== DASHBOARD SECTION ===== -->
+      <div *ngIf="seccion === 'dashboard'">
+        <!-- ESTADÍSTICAS -->
+        <div class="stats-grid">
+          <div class="stat-card stat-1">
+            <div class="stat-icon">
+              <i class="fas fa-box fa-2x"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ estadisticas.total }}</h3>
+              <p>Encomiendas</p>
+            </div>
+          </div>
+
+          <div class="stat-card stat-2">
+            <div class="stat-icon">
+              <i class="fas fa-truck fa-2x"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ estadisticas.en_transito }}</h3>
+              <p>En Tránsito</p>
+            </div>
+          </div>
+
+          <div class="stat-card stat-3">
+            <div class="stat-icon">
+              <i class="fas fa-exclamation fa-2x"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ estadisticas.incidencias }}</h3>
+              <p>Incidencias</p>
+            </div>
+          </div>
+
+          <div class="stat-card stat-4">
+            <div class="stat-icon">
+              <i class="fas fa-check fa-2x"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ estadisticas.entregadas }}</h3>
+              <p>Entregadas</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ENCOMIENDAS RECIENTES -->
+        <div class="card mt-4">
+          <div class="card-header">
+            <h5 class="mb-0">Encomiendas Recientes</h5>
+          </div>
+          <div class="card-body">
+            <div *ngIf="loading" class="spinner"></div>
+
+            <div *ngIf="!loading && encomiendas.length === 0" class="alert alert-info">
+              No hay encomiendas registradas
+            </div>
+
+            <div *ngIf="!loading && encomiendas.length > 0" class="table-responsive">
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>Código</th>
+                    <th>Remitente</th>
+                    <th>Destinatario</th>
+                    <th>Valor</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let e of encomiendas.slice(0, 5)">
+                    <td><strong>{{ e.codigoSeguimiento }}</strong></td>
+                    <td>{{ e.remitente?.nombre || 'N/A' }}</td>
+                    <td>{{ e.destinatario?.nombre || 'N/A' }}</td>
+                    <td>${{ e.valor | number: '1.0-0' }}</td>
+                    <td>
+                      <span class="badge" [ngClass]="getEstadoBadge(e.estado)">
+                        {{ e.estado }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== ENCOMIENDAS SECTION ===== -->
+      <div *ngIf="seccion === 'encomiendas'">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">Todas las Encomiendas</h5>
+          </div>
+          <div class="card-body">
+            <div *ngIf="loading" class="spinner"></div>
+
+            <div *ngIf="!loading && encomiendas.length === 0" class="alert alert-info">
+              No hay encomiendas registradas
+            </div>
+
+            <div *ngIf="!loading && encomiendas.length > 0" class="table-responsive">
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>Código</th>
+                    <th>Remitente</th>
+                    <th>Destinatario</th>
+                    <th>Valor</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let e of encomiendas">
+                    <td><strong>{{ e.codigoSeguimiento }}</strong></td>
+                    <td>{{ e.remitente?.nombre || 'N/A' }}</td>
+                    <td>{{ e.destinatario?.nombre || 'N/A' }}</td>
+                    <td>${{ e.valor | number: '1.0-0' }}</td>
+                    <td>
+                      <span class="badge" [ngClass]="getEstadoBadge(e.estado)">
+                        {{ e.estado }}
+                      </span>
+                    </td>
+                    <td>
+                      <button class="btn btn-sm btn-primary" title="Ver detalles">
+                        <i class="fas fa-eye"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== REPORTES SECTION ===== -->
+      <div *ngIf="seccion === 'reportes'">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">Reportes y Estadísticas</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <h6>Resumen General</h6>
+                <ul class="list-unstyled">
+                  <li><strong>Total de Encomiendas:</strong> {{ estadisticas.total }}</li>
+                  <li><strong>En Tránsito:</strong> {{ estadisticas.en_transito }}</li>
+                  <li><strong>Entregadas:</strong> {{ estadisticas.entregadas }}</li>
+                  <li><strong>Incidencias:</strong> {{ estadisticas.incidencias }}</li>
+                </ul>
+              </div>
+              <div class="col-md-6">
+                <h6>Gráficos</h6>
+                <p class="text-muted">Próximamente: Gráficos de estadísticas</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== USUARIOS SECTION ===== -->
+      <div *ngIf="seccion === 'usuarios'">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">Gestión de Usuarios</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-12">
+                <h6>Usuarios del Sistema</h6>
+                <div class="alert alert-info">
+                  <i class="fas fa-info-circle"></i>
+                  Módulo de gestión de usuarios en desarrollo
+                </div>
+                <p class="text-muted">Aquí puedes administrar usuarios, roles y permisos del sistema.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== CONFIGURACION SECTION ===== -->
+      <div *ngIf="seccion === 'configuracion'">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">Configuración del Sistema</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <h6>Configuración General</h6>
+                <form>
+                  <div class="mb-3">
+                    <label class="form-label">Nombre de la Empresa</label>
+                    <input type="text" class="form-control" value="LonquiExpress" disabled>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Email de Contacto</label>
+                    <input type="email" class="form-control" value="info@lonquiexpress.cl" disabled>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Teléfono</label>
+                    <input type="tel" class="form-control" value="+56912345678" disabled>
+                  </div>
+                </form>
+              </div>
+              <div class="col-md-6">
+                <h6>Información del Sistema</h6>
+                <ul class="list-unstyled">
+                  <li><strong>Versión:</strong> 1.0.0</li>
+                  <li><strong>Estado:</strong> <span class="badge bg-success">Activo</span></li>
+                  <li><strong>Base de Datos:</strong> MongoDB</li>
+                  <li><strong>Framework:</strong> Angular 20</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

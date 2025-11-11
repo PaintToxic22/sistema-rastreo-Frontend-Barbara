@@ -1,0 +1,103 @@
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-8 mx-auto">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h3 class="mb-0">Rastrear tu Encomienda</h3>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="formTracking" (ngSubmit)="buscar()">
+            <div class="input-group mb-3">
+              <input 
+                type="text" 
+                class="form-control" 
+                placeholder="Ingresa tu código de seguimiento"
+                formControlName="codigo"
+              >
+              <button class="btn btn-primary" type="submit" [disabled]="loading">
+                <span *ngIf="!loading">Buscar</span>
+                <span *ngIf="loading">Buscando...</span>
+              </button>
+            </div>
+          </form>
+
+          <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+          <div *ngIf="encomienda" class="mt-4">
+            <div class="encomienda-header mb-4">
+              <h4>{{ encomienda.codigoSeguimiento }}</h4>
+              <span class="badge" [ngClass]="getEstadoBadge(encomienda.estado)">
+                {{ getEstadoTexto(encomienda.estado) }}
+              </span>
+            </div>
+
+            <!-- Barra de progreso -->
+            <div class="progress mb-4" style="height: 25px;">
+              <div 
+                class="progress-bar" 
+                [style.width.%]="encomienda.porcentajeEntrega"
+              >
+                {{ encomienda.porcentajeEntrega }}%
+              </div>
+            </div>
+
+            <!-- Información de la encomienda -->
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <h6 class="text-muted">Remitente</h6>
+                <p>
+                  <strong>{{ encomienda.remitente.nombre }}</strong><br>
+                  {{ encomienda.remitente.direccion }}<br>
+                  {{ encomienda.remitente.ciudad }}
+                </p>
+              </div>
+              <div class="col-md-6">
+                <h6 class="text-muted">Destinatario</h6>
+                <p>
+                  <strong>{{ encomienda.destinatario.nombre }}</strong><br>
+                  {{ encomienda.destinatario.direccion }}<br>
+                  {{ encomienda.destinatario.ciudad }}
+                </p>
+              </div>
+            </div>
+
+            <div class="row mb-4">
+              <div class="col-md-4">
+                <h6 class="text-muted">Descripción</h6>
+                <p>{{ encomienda.descripcion }}</p>
+              </div>
+              <div class="col-md-4">
+                <h6 class="text-muted">Peso</h6>
+                <p>{{ encomienda.peso }} kg</p>
+              </div>
+              <div class="col-md-4">
+                <h6 class="text-muted">Valor</h6>
+                <p>${{ encomienda.valor | number }}</p>
+              </div>
+            </div>
+
+            <!-- Historial de tracking -->
+            <h5 class="mb-3">Historial de Seguimiento</h5>
+            <div class="timeline">
+              <div *ngFor="let evento of historial; let last = last" class="timeline-item">
+                <div class="timeline-marker" [ngClass]="'estado-' + evento.estado"></div>
+                <div class="timeline-content">
+                  <h6>{{ getEstadoTexto(evento.estado) }}</h6>
+                  <p class="text-muted">{{ evento.fecha | date: 'medium' }}</p>
+                  <p>{{ evento.descripcion }}</p>
+                  <small *ngIf="evento.nombreRecibidor" class="text-success">
+                    ✓ Recibido por: {{ evento.nombreRecibidor }}
+                  </small>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="encomienda.chofer" class="alert alert-info mt-3">
+              <strong>Chofer asignado:</strong> {{ encomienda.chofer.nombre }} - {{ encomienda.chofer.telefono }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

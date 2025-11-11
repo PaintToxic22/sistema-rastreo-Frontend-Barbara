@@ -1,0 +1,31 @@
+.card {
+  margin-bottom: 20px;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.card-header h5 {
+  margin: 0;
+}
+
+.form-label {
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.alert {
+  margin-bottom: 20px;
+}
+
+.d-flex {
+  display: flex;
+  gap: 10px;
+}
+
+.gap-2 {
+  gap: 10px !important;
+}

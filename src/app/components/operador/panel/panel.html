@@ -1,0 +1,126 @@
+<div class="operador-container">
+  <div class="sidebar">
+    <div class="logo">
+      <i class="fas fa-box"></i>
+      <h5>LonquiExpress</h5>
+      <small>Panel Operador</small>
+    </div>
+
+    <nav class="menu">
+      <a class="menu-item" [ngClass]="{'active': seccion === 'inicio'}"
+         (click)="mostrarSeccion('inicio')" href="#">
+        <i class="fas fa-home"></i>Inicio
+      </a>
+      <a class="menu-item" [ngClass]="{'active': seccion === 'registro'}"
+         (click)="mostrarSeccion('registro')" href="#">
+        <i class="fas fa-plus"></i>Nueva Encomienda
+      </a>
+      <a class="menu-item" [ngClass]="{'active': seccion === 'encomiendas'}"
+         (click)="mostrarSeccion('encomiendas')" href="#">
+        <i class="fas fa-list"></i>Mis Encomiendas
+      </a>
+    </nav>
+
+    <div class="user-info">
+      <strong>{{ usuario?.nombre }}</strong>
+      <small>{{ usuario?.rol }}</small>
+    </div>
+
+    <button class="btn-logout" (click)="logout()">
+      <i class="fas fa-sign-out-alt"></i>Salir
+    </button>
+  </div>
+
+  <div class="main-content">
+    <!-- INICIO -->
+    <div *ngIf="seccion === 'inicio'" class="section">
+      <h2>Bienvenido, {{ usuario?.nombre }}</h2>
+      <p class="text-muted">Panel de Operador - Gestión de Encomiendas</p>
+      <div class="quick-actions">
+        <div class="action-card" (click)="mostrarSeccion('registro')">
+          <i class="fas fa-plus-circle fa-3x text-primary"></i>
+          <h5>Nueva Encomienda</h5>
+          <p>Registrar una nueva encomienda</p>
+        </div>
+        <div class="action-card" (click)="mostrarSeccion('encomiendas')">
+          <i class="fas fa-search fa-3x text-success"></i>
+          <h5>Ver Encomiendas</h5>
+          <p>Consultar estado de encomiendas</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- REGISTRO -->
+    <div *ngIf="seccion === 'registro'" class="section">
+      <h3>Registrar Nueva Encomienda</h3>
+      
+      <div *ngIf="success" class="alert alert-success">
+        ✓ Encomienda creada exitosamente
+      </div>
+      <div *ngIf="error" class="alert alert-danger">
+        ✗ {{ error }}
+      </div>
+
+      <form [formGroup]="formEncomienda" (ngSubmit)="crearEncomienda()" class="form-container">
+        <div class="form-section">
+          <h5>Remitente</h5>
+          <input type="text" placeholder="Nombre" formControlName="remitenteNombre" class="form-control">
+          <input type="text" placeholder="Ciudad" formControlName="remitenteCity" class="form-control">
+          <input type="text" placeholder="Dirección" formControlName="remitenteAddress" class="form-control">
+        </div>
+
+        <div class="form-section">
+          <h5>Destinatario</h5>
+          <input type="text" placeholder="Nombre" formControlName="destinatarioNombre" class="form-control">
+          <input type="text" placeholder="Ciudad" formControlName="destinatarioCity" class="form-control">
+          <input type="text" placeholder="Dirección" formControlName="destinatarioAddress" class="form-control">
+        </div>
+
+        <div class="form-section">
+          <h5>Encomienda</h5>
+          <textarea placeholder="Descripción" formControlName="descripcion" class="form-control"></textarea>
+          <input type="number" placeholder="Peso (kg)" formControlName="peso" class="form-control">
+          <input type="number" placeholder="Valor ($)" formControlName="valor" class="form-control">
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100" [disabled]="loading">
+          {{ loading ? 'Guardando...' : 'Crear Encomienda' }}
+        </button>
+      </form>
+    </div>
+
+    <!-- ENCOMIENDAS -->
+    <div *ngIf="seccion === 'encomiendas'" class="section">
+      <h3>Mis Encomiendas</h3>
+      
+      <div *ngIf="loading" class="spinner"></div>
+
+      <div *ngIf="!loading && encomiendas.length > 0" class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Remitente</th>
+              <th>Destinatario</th>
+              <th>Valor</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let e of encomiendas">
+              <td><strong>{{ e.codigoSeguimiento }}</strong></td>
+              <td>{{ e.remitente?.nombre }}</td>
+              <td>{{ e.destinatario?.nombre }}</td>
+              <td>${{ e.valor | number }}</td>
+              <td><span class="badge" [ngClass]="'bg-info'">{{ e.estado }}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="!loading && encomiendas.length === 0" class="alert alert-info">
+        No hay encomiendas registradas
+      </div>
+    </div>
+  </div>
+</div>
