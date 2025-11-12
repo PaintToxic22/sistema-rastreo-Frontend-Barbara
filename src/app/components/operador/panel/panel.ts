@@ -2,8 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService } from '../../../services/auth';
-import { EncomiendaService } from '../../../services/encomienda';
+import { AuthService } from '../../../services/auth.service';
+import { EncomiendaService } from '../../../services/encomienda.service';
 
 @Component({
   selector: 'app-operador-panel',
@@ -57,7 +57,7 @@ export class OperadorPanelComponent implements OnInit {
     this.loading = true;
     this.encomiendaService.obtenerEncomiendas().subscribe({
       next: (res) => {
-        this.encomiendas = res.encomiendas || [];
+        this.encomiendas = res || [];
         this.loading = false;
       },
       error: (err) => {

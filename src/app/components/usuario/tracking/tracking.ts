@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { TrackingService } from '../../../services/tracking';
+import { TrackingService } from '../../../services/tracking.service';
 
 @Component({
   selector: 'app-tracking',
@@ -44,9 +44,11 @@ export class TrackingComponent implements OnInit {
     this.trackingService.rastrearPorCodigo(codigo).subscribe({
       next: (response) => {
         this.loading = false;
-        if (response.success) {
+        if (response && response.encomienda) {
           this.encomienda = response.encomienda;
-          this.historial = response.historial;
+          this.historial = response.historial || [];
+        } else {
+          this.error = 'Encomienda no encontrada';
         }
       },
       error: (err) => {

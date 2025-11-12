@@ -6,10 +6,29 @@ import { OperadorPanelComponent } from './components/operador/panel/panel';
 import { TrackingComponent } from './components/usuario/tracking/tracking';
 import { AuthGuard } from './guards/auth.guard';
 
+/**
+ * ✅ Rutas de la aplicación
+ * - Login: acceso público
+ * - Tracking: solo usuarios autenticados
+ * - Operador: operadores y admins
+ * - Chofer: solo choferes
+ * - Admin: solo administradores
+ */
 export const routes: Routes = [
-  { path: 'login', component: LoginComponent },
-  { path: '', redirectTo: '/login', pathMatch: 'full' },
+  // ✅ Login (Público)
+  { 
+    path: 'login', 
+    component: LoginComponent 
+  },
   
+  // ✅ Ruta por defecto
+  { 
+    path: '', 
+    redirectTo: '/login', 
+    pathMatch: 'full' 
+  },
+  
+  // ✅ Tracking de Encomiendas (Usuario)
   { 
     path: 'usuario/tracking',
     component: TrackingComponent,
@@ -17,6 +36,7 @@ export const routes: Routes = [
     data: { rol: ['usuario'] }
   },
 
+  // ✅ Panel de Operador
   { 
     path: 'operador/encomiendas',
     component: OperadorPanelComponent,
@@ -24,6 +44,7 @@ export const routes: Routes = [
     data: { rol: ['admin', 'operador'] }
   },
 
+  // ✅ Panel de Chofer
   { 
     path: 'chofer/asignadas',
     component: ChoferPanelComponent,
@@ -31,6 +52,7 @@ export const routes: Routes = [
     data: { rol: ['chofer'] }
   },
 
+  // ✅ Dashboard de Admin
   { 
     path: 'admin/dashboard',
     component: AdminComponent,
@@ -38,5 +60,9 @@ export const routes: Routes = [
     data: { rol: ['admin'] }
   },
 
-  { path: '**', redirectTo: '/login' }
+  // ✅ Ruta comodín (página no encontrada)
+  { 
+    path: '**', 
+    redirectTo: '/login' 
+  }
 ];

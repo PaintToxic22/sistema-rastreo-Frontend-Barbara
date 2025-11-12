@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ActivatedRouteSnapshot, CanActivate, Router, RouterStateSnapshot } from '@angular/router';
-import { AuthService } from '../services/auth';
+import { AuthService } from '../services/auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -12,36 +12,29 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
-    console.log('🔐 AuthGuard verificando...');
+    console.log('🔐 AuthGuard verificando acceso a:', state.url);
 
-    // Primero, verificar si hay un token. Es la forma más rápida de saber si hay sesión.
-    const token = this.authService.obtenerToken();
-    if (!token) {
-      console.log('❌ No hay token. Redirigiendo a login.');
+    // ✅ PASO 1: Verificar si está autenticado
+    if (!this.authService.estaAutenticado()) {
+      console.log('❌ No autenticado. Redirigiendo a login.');
       this.router.navigate(['/login']);
       return false;
     }
 
-    // Si hay token, verificar los datos del usuario.
-    const usuario = this.authService.currentUser();
-    if (!usuario) {
-      console.log('❌ Hay token pero no hay datos de usuario. Redirigiendo a login.');
-      // Esto podría pasar si el localStorage está corrupto o en un estado inconsistente.
-      this.authService.logout(); // Limpiar el estado inconsistente.
-      return false;
-    }
+    console.log('✅ Autenticado');
 
-    console.log('👤 Usuario actual:', usuario);
-
-    // Verificar rol si está especificado en la ruta.
+    // ✅ PASO 2: Verificar rol si está especificado en la ruta
     const rolesRequeridos = route.data['rol'];
     if (rolesRequeridos && rolesRequeridos.length > 0) {
-      console.log('🔑 Roles requeridos:', rolesRequeridos);
-      console.log('👥 Rol del usuario:', usuario.rol);
+      const rolUsuario = this.authService.obtenerRol();
+      
+      console.log('🔍 Roles requeridos:', rolesRequeridos);
+      console.log('👤 Rol del usuario:', rolUsuario);
 
-      // Verificar si el usuario tiene uno de los roles requeridos.
-      if (!rolesRequeridos.includes(usuario.rol)) {
-        console.log('❌ Rol no autorizado. Redirigiendo a login.');
+      // ✅ FIX: Verificar que rol no sea null antes de hacer includes
+      if (!rolUsuario || !rolesRequeridos.includes(rolUsuario)) {
+        console.log('❌ Rol no autorizado');
+        alert('❌ No tienes permisos para acceder a esta sección');
         this.router.navigate(['/login']);
         return false;
       }

@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { EncomiendaService } from '../../../services/encomienda';
+import { EncomiendaService } from '../../../services/encomienda.service';
 
 @Component({
   selector: 'app-entregar-encomienda',
@@ -46,7 +46,8 @@ export class EntregarEncomiendaComponent implements OnInit {
   cargarEncomienda() {
     this.encomiendaService.obtenerEncomiendaPorId(this.encomiendaId).subscribe({
       next: (response) => {
-        this.encomienda = response.encomienda;
+        // The service returns the Encomienda object directly, so assign response itself.
+        this.encomienda = response;
       },
       error: (err) => {
         this.error = 'No se pudo cargar la encomienda';
