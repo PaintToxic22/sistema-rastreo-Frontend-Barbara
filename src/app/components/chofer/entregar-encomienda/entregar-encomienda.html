@@ -1,70 +1,219 @@
-<div class="container mt-4">
-  <div class="row">
-    <div class="col-md-8 mx-auto">
-      <h2>Entregar Encomienda</h2>
-
-      <div *ngIf="encomienda" class="card mb-3">
-        <div class="card-body">
-          <div class="row">
-            <div class="col-md-6">
-              <h6 class="text-muted">Código de Seguimiento</h6>
-              <p><strong>{{ encomienda.codigoSeguimiento }}</strong></p>
-            </div>
-            <div class="col-md-6">
-              <h6 class="text-muted">Para</h6>
-              <p><strong>{{ encomienda.destinatario.nombre }}</strong></p>
-            </div>
-          </div>
-          <p>{{ encomienda.destinatario.direccion }}, {{ encomienda.destinatario.ciudad }}</p>
+<div class="container-fluid min-vh-100 entrega-bg">
+  <!-- HEADER -->
+  <div class="header-entrega">
+    <div class="container-xl">
+      <div class="row align-items-center">
+        <div class="col">
+          <h2 class="mb-1">
+            <i class="fas fa-check-circle"></i> Confirmar Entrega
+          </h2>
+          <small>Completa los datos del recibidor</small>
+        </div>
+        <div class="col-auto">
+          <span class="me-3 text-light">👤 {{ usuario?.nombre }}</span>
+          <button class="btn btn-light btn-sm" (click)="logout()">
+            <i class="fas fa-sign-out-alt"></i> Salir
+          </button>
         </div>
       </div>
+    </div>
+  </div>
 
-      <form [formGroup]="formEntrega" (ngSubmit)="entregarEncomienda()">
-        <div class="card mb-3">
-          <div class="card-header">Datos del Recibidor</div>
+  <!-- CONTENIDO -->
+  <div class="container-xl mt-4 mb-5">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+
+        <!-- ALERTAS -->
+        <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+          <i class="fas fa-exclamation-circle"></i>
+          <strong>Error:</strong> {{ error }}
+          <button type="button" class="btn-close" (click)="error = ''"></button>
+        </div>
+
+        <div *ngIf="success" class="alert alert-success alert-dismissible fade show" role="alert">
+          <i class="fas fa-check-circle"></i>
+          <strong>¡Éxito!</strong> Entrega confirmada correctamente. Redirigiendo...
+        </div>
+
+        <!-- CARD INFORMACIÓN DE ENCOMIENDA -->
+        <div *ngIf="encomienda" class="card mb-4 info-card">
+          <div class="card-header bg-info text-white">
+            <h5 class="mb-0">
+              <i class="fas fa-box"></i> Información de la Encomienda
+            </h5>
+          </div>
           <div class="card-body">
-            <div class="mb-3">
-              <label class="form-label">Nombre de quien recibe *</label>
-              <input type="text" class="form-control" formControlName="nombreRecibidor" required>
-              <small class="text-danger" *ngIf="formEntrega.get('nombreRecibidor')?.invalid && formEntrega.get('nombreRecibidor')?.touched">
-                Nombre requerido
-              </small>
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <h6 class="text-muted mb-2">Código de Seguimiento</h6>
+                <p class="fw-bold" style="font-size: 1.1rem;">{{ encomienda.codigoSeguimiento }}</p>
+              </div>
+              <div class="col-md-6">
+                <h6 class="text-muted mb-2">Valor</h6>
+                <p class="fw-bold" style="font-size: 1.1rem; color: #28a745;">
+                  ${{ encomienda.valor | number }}
+                </p>
+              </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label">RUT (opcional)</label>
-              <input type="text" class="form-control" formControlName="rutRecibidor" placeholder="12345678-9">
-            </div>
+            <hr class="my-3">
 
-            <div class="mb-3">
-              <label class="form-label">Notas de la entrega</label>
-              <textarea class="form-control" formControlName="notas" rows="3"></textarea>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label">Foto de la entrega</label>
-              <input 
-                type="file" 
-                class="form-control" 
-                accept="image/*"
-                (change)="onFotoSelected($event)"
-              >
-              <img *ngIf="fotoPreview" [src]="fotoPreview" alt="preview" class="img-thumbnail mt-2" style="max-width: 200px;">
+            <div class="row">
+              <div class="col-md-6">
+                <h6 class="text-muted mb-2">📍 Destinatario</h6>
+                <p class="mb-1"><strong>{{ encomienda.destinatario?.nombre }}</strong></p>
+                <p class="mb-1 small">{{ encomienda.destinatario?.direccion }}</p>
+                <p class="mb-0 small">{{ encomienda.destinatario?.ciudad }}</p>
+              </div>
+              <div class="col-md-6">
+                <h6 class="text-muted mb-2">📦 Detalles</h6>
+                <p class="mb-1 small"><strong>Peso:</strong> {{ encomienda.peso || 'N/A' }} kg</p>
+                <p class="mb-1 small"><strong>Descripción:</strong> {{ encomienda.descripcion }}</p>
+              </div>
             </div>
           </div>
         </div>
 
-        <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
-        <div *ngIf="success" class="alert alert-success">¡Encomienda entregada exitosamente!</div>
+        <!-- FORMULARIO DE ENTREGA -->
+        <div class="card mb-4">
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+              <i class="fas fa-user-check"></i> Datos del Recibidor
+            </h5>
+          </div>
+          <div class="card-body">
+            <form [formGroup]="formEntrega" (ngSubmit)="entregarEncomienda()">
+              
+              <!-- Nombre (REQUERIDO) -->
+              <div class="mb-4">
+                <label class="form-label">
+                  <strong>Nombre de quien recibe</strong>
+                  <span class="text-danger">*</span> (Requerido)
+                </label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-lg"
+                  placeholder="Ej: Carlos González"
+                  formControlName="nombreRecibidor"
+                  [class.is-invalid]="nombreInvalido"
+                >
+                <small class="text-muted d-block mt-2">
+                  💡 Nombre completo de la persona que recibe la encomienda
+                </small>
+                <div class="invalid-feedback" *ngIf="nombreInvalido">
+                  Nombre requerido (mínimo 3 caracteres)
+                </div>
+              </div>
 
-        <div class="d-flex gap-2">
-          <button type="submit" class="btn btn-success" [disabled]="loading || formEntrega.invalid">
-            <span *ngIf="!loading">Confirmar Entrega</span>
-            <span *ngIf="loading">Guardando...</span>
-          </button>
-          <button type="button" class="btn btn-secondary" (click)="volver()">Cancelar</button>
+              <!-- RUT (OPCIONAL) -->
+              <div class="mb-4">
+                <label class="form-label">
+                  <strong>RUT de la Persona</strong>
+                  <span class="text-muted">(Opcional)</span>
+                </label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-lg"
+                  placeholder="12.345.678-9"
+                  formControlName="rutRecibidor"
+                  (input)="formatearRUT($event)"
+                >
+                <small class="text-muted d-block mt-2">
+                  💡 Formato: XX.XXX.XXX-X (opcional, se completa automáticamente)
+                </small>
+              </div>
+
+              <!-- Notas -->
+              <div class="mb-4">
+                <label class="form-label">
+                  <strong>Notas / Ubicación Específica</strong>
+                  <span class="text-muted">(Opcional)</span>
+                </label>
+                <textarea 
+                  class="form-control"
+                  placeholder="Ej: Junto a farmacia, casa con portón azul, piso 3"
+                  formControlName="notas"
+                  rows="3"
+                ></textarea>
+                <small class="text-muted d-block mt-2">
+                  💡 Referencia para futuras entregas
+                </small>
+              </div>
+
+              <!-- Foto (OPCIONAL) -->
+              <div class="mb-4">
+                <label class="form-label">
+                  <strong>Foto de la Entrega</strong>
+                  <span class="text-muted">(Opcional)</span>
+                </label>
+                <div class="input-group mb-3">
+                  <input 
+                    type="file" 
+                    class="form-control"
+                    id="fotoInput"
+                    accept="image/*"
+                    (change)="onFotoSelected($event)"
+                  >
+                  <label class="input-group-text" for="fotoInput">
+                    <i class="fas fa-camera"></i> Seleccionar
+                  </label>
+                </div>
+                <img 
+                  *ngIf="fotoPreview" 
+                  [src]="fotoPreview" 
+                  alt="preview" 
+                  class="img-thumbnail mt-2" 
+                  style="max-width: 250px; max-height: 250px;"
+                >
+                <small class="text-muted d-block mt-2">
+                  💡 Máximo 5MB. Formatos: JPG, PNG, etc.
+                </small>
+              </div>
+
+              <!-- INFORMACIÓN IMPORTANTE -->
+              <div class="alert alert-info mb-4">
+                <h6 class="mb-2">
+                  <i class="fas fa-info-circle"></i> Información Importante
+                </h6>
+                <ul class="mb-0 small">
+                  <li><strong>Nombre:</strong> Campo obligatorio</li>
+                  <li><strong>RUT:</strong> Campo opcional (puede dejarse vacío)</li>
+                  <li>Se guardará automáticamente: fecha, hora y tu ubicación</li>
+                  <li>Asegúrate de que la persona firme o confirme la recepción</li>
+                </ul>
+              </div>
+
+              <!-- BOTONES -->
+              <div class="d-flex gap-2">
+                <button 
+                  type="submit" 
+                  class="btn btn-success btn-lg flex-grow-1"
+                  [disabled]="loading || formEntrega.invalid"
+                >
+                  <span *ngIf="!loading">
+                    <i class="fas fa-check-circle"></i> Confirmar Entrega
+                  </span>
+                  <span *ngIf="loading">
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                    Confirmando...
+                  </span>
+                </button>
+
+                <button 
+                  type="button" 
+                  class="btn btn-secondary btn-lg"
+                  (click)="volver()"
+                  [disabled]="loading"
+                >
+                  <i class="fas fa-arrow-left"></i> Volver
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </form>
+
+      </div>
     </div>
   </div>
 </div>

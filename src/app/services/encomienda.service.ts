@@ -1,7 +1,7 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, signal } from '@angular/core';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
-import { catchError, finalize, map, shareReplay, tap } from 'rxjs/operators';
+import { catchError, finalize, map, tap } from 'rxjs/operators';
 
 export interface Encomienda {
   _id?: string;
@@ -22,12 +22,15 @@ export interface Encomienda {
   };
   valor: number;
   peso?: number;
-  estado: 'pendiente' | 'en_transito' | 'entregada' | 'incidencia' | 'cancelada';
+  estado: 'pendiente' | 'asignado' | 'en_transito' | 'entregada' | 'incidencia' | 'cancelada';
   descripcion?: string;
   fechaCreacion?: Date;
   fechaEntrega?: Date;
   chofer?: any;
   porcentajeEntrega?: number;
+  nombreRecibidor?: string;
+  rutRecibidor?: string;
+  ubicacionEntrega?: string;
 }
 
 @Injectable({ 
@@ -52,153 +55,59 @@ export class EncomiendaService {
   }
 
   /**
-   * ✅ Carga todas las encomiendas (con caché)
+   * ✅ Crea una nueva encomienda manualmente
    */
-  cargarEncomiendas(estado?: string): Observable<Encomienda[]> {
-    // Si hay cache y no hay filtro, devolver cache
-    if (this.encomiendasCache$ && !estado) {
-      return this.encomiendasCache$;
-    }
-
+  crearEncomiendaManual(datos: Partial<Encomienda>): Observable<any> {
     this.cargando.set(true);
     this.cargando$.next(true);
-    this.error.set(null);
-    this.error$.next(null);
-    
-    console.log('📦 Cargando encomiendas...', estado ? `(filtro: ${estado})` : '');
+    console.log('📝 Creando encomienda manual...');
 
-    let params = new HttpParams();
-    if (estado) {
-      params = params.set('estado', estado);
+    // ✅ Validar datos requeridos
+    if (!datos.codigoSeguimiento || datos.codigoSeguimiento.length < 10) {
+      const error = 'Código debe tener mínimo 10 caracteres';
+      this.error.set(error);
+      this.error$.next(error);
+      this.cargando.set(false);
+      this.cargando$.next(false);
+      return throwError(() => new Error(error));
     }
 
-    this.encomiendasCache$ = this.http.get<{ encomiendas: Encomienda[] }>(
-      `${this.apiUrl}/encomiendas`,
-      { params }
-    ).pipe(
-      map(response => response.encomiendas),
-      tap(encomiendas => {
-        console.log('✅ Encomiendas cargadas:', encomiendas.length);
-        this.encomiendas.set(encomiendas);
-        this.encomiendas$.next(encomiendas);
-      }),
-      shareReplay(1),
-      catchError(err => {
-        console.error('❌ Error cargando:', err);
-        this.error.set('Error al cargar encomiendas');
-        this.error$.next('Error al cargar encomiendas');
-        return this.getEncomiendasLocales();
-      }),
-      finalize(() => {
-        this.cargando.set(false);
-        this.cargando$.next(false);
-      })
-    );
+    if (!datos.valor || datos.valor < 1000) {
+      const error = 'Valor mínimo: $1.000';
+      this.error.set(error);
+      this.error$.next(error);
+      this.cargando.set(false);
+      this.cargando$.next(false);
+      return throwError(() => new Error(error));
+    }
 
-    return this.encomiendasCache$;
-  }
-
-  /**
-   * ✅ Obtiene encomiendas como observable
-   */
-  getEncomiendas$(): Observable<Encomienda[]> {
-    return this.encomiendas$.asObservable();
-  }
-
-  /**
-   * ✅ Obtiene estado de carga
-   */
-  getCargando$(): Observable<boolean> {
-    return this.cargando$.asObservable();
-  }
-
-  /**
-   * ✅ Obtiene errores
-   */
-  getError$(): Observable<string | null> {
-    return this.error$.asObservable();
-  }
-
-  /**
-   * ✅ Obtiene encomiendas locales (fallback)
-   */
-  private getEncomiendasLocales(): Observable<Encomienda[]> {
-    console.log('📚 Usando encomiendas locales');
-    return this.encomiendas$.asObservable();
-  }
-
-  /**
-   * ✅ Obtiene todas las encomiendas
-   */
-  obtenerEncomiendas(): Observable<Encomienda[]> {
-    return this.cargarEncomiendas();
-  }
-
-  /**
-   * ✅ Obtiene una encomienda por ID
-   */
-  obtenerEncomiendaPorId(id: string): Observable<Encomienda> {
-    console.log('🔍 Buscando encomienda:', id);
-    return this.http.get<Encomienda>(`${this.apiUrl}/encomiendas/${id}`).pipe(
-      tap(encomienda => console.log('✅ Encontrada:', encomienda)),
-      catchError(err => {
-        console.error('❌ Error:', err);
-        this.error.set('Encomienda no encontrada');
-        this.error$.next('Encomienda no encontrada');
-        return throwError(() => err);
-      })
-    );
-  }
-
-  /**
-   * ✅ Obtiene encomienda por código de seguimiento
-   */
-  obtenerPorCodigo(codigo: string): Observable<Encomienda> {
-    console.log('🔍 Buscando:', codigo);
-    return this.http.get<Encomienda>(`${this.apiUrl}/encomiendas/codigo/${codigo}`).pipe(
-      tap(e => console.log('✅ Encontrada:', e)),
-      catchError(err => {
-        this.error.set('Código no válido');
-        this.error$.next('Código no válido');
-        return throwError(() => err);
-      })
-    );
-  }
-
-  /**
-   * ✅ Crea una nueva encomienda
-   */
-  crearEncomienda(datos: Partial<Encomienda>): Observable<Encomienda> {
-    this.cargando.set(true);
-    this.cargando$.next(true);
-    console.log('📝 Creando encomienda...');
-
-    const encomienda: Encomienda = {
-      codigoSeguimiento: this.generarCodigo(),
-      estado: 'pendiente',
-      valor: datos.valor || 0,
-      remitente: datos.remitente || { nombre: '', ciudad: '', direccion: '' },
-      destinatario: datos.destinatario || { nombre: '', ciudad: '', direccion: '' },
+    const encomienda = {
+      codigoSeguimiento: datos.codigoSeguimiento?.toUpperCase().trim(),
+      remitente: datos.remitente,
+      destinatario: datos.destinatario,
+      valor: Number(datos.valor),
+      peso: Number(datos.peso) || 0,
       descripcion: datos.descripcion,
-      peso: datos.peso,
+      estado: 'pendiente',
+      porcentajeEntrega: 0,
       fechaCreacion: new Date()
     };
 
-    return this.http.post<Encomienda>(`${this.apiUrl}/encomiendas`, encomienda).pipe(
-      tap(nueva => {
-        console.log('✅ Creada:', nueva);
-        const lista = this.encomiendas();
-        this.encomiendas.set([...lista, nueva]);
-        this.encomiendas$.next([...lista, nueva]);
-        this.encomiendasCache$ = null; // ✅ Limpiar cache
-        alert(`✅ Creada: ${nueva.codigoSeguimiento}`);
+    return this.http.post<any>(`${this.apiUrl}/encomiendas/crear-manual`, encomienda).pipe(
+      tap(response => {
+        console.log('✅ Encomienda creada:', response);
+        this.encomiendasCache$ = null; // Limpiar cache
+        
+        // ✅ ASIGNAR CHOFER AUTOMÁTICAMENTE
+        if (response.encomienda?._id) {
+          this.asignarChofersAutomaticamente(response.encomienda._id);
+        }
       }),
       catchError(err => {
         console.error('❌ Error:', err);
-        const msg = err.error?.message || 'Error al crear';
-        this.error.set(msg);
-        this.error$.next(msg);
-        alert(`❌ ${msg}`);
+        const message = err.error?.message || 'Error al crear encomienda';
+        this.error.set(message);
+        this.error$.next(message);
         return throwError(() => err);
       }),
       finalize(() => {
@@ -209,121 +118,145 @@ export class EncomiendaService {
   }
 
   /**
-   * ✅ Actualiza una encomienda
+   * ✅ Asignar chofer automáticamente
    */
-  actualizarEncomienda(id: string, datos: Partial<Encomienda>): Observable<Encomienda> {
-    this.cargando.set(true);
-    this.cargando$.next(true);
-    console.log('✏️ Actualizando:', id);
+  private asignarChofersAutomaticamente(encomiendaId: string) {
+    console.log('🚗 Asignando chofer automáticamente...');
+    
+    this.http.post<any>(`${this.apiUrl}/encomiendas/${encomiendaId}/asignar-chofer`, {})
+      .subscribe({
+        next: (response) => {
+          console.log('✅ Chofer asignado:', response.chofer?.nombre);
+        },
+        error: (err) => {
+          console.warn('⚠️ No hay choferes disponibles:', err);
+        }
+      });
+  }
 
-    return this.http.patch<Encomienda>(`${this.apiUrl}/encomiendas/${id}`, datos).pipe(
-      tap(actualizada => {
-        console.log('✅ Actualizada:', actualizada);
-        const lista = this.encomiendas().map(e => e._id === id ? actualizada : e);
-        this.encomiendas.set(lista);
-        this.encomiendas$.next(lista);
-        this.encomiendasCache$ = null; // ✅ Limpiar cache
-        alert('✅ Actualizada');
-      }),
+  /**
+   * ✅ Obtiene encomiendas asignadas a un chofer
+   */
+  obtenerAsignadas(choferId: string): Observable<Encomienda[]> {
+    console.log('📍 Obteniendo asignadas para chofer:', choferId);
+    
+    return this.http.get<any>(`${this.apiUrl}/encomiendas/asignadas/${choferId}`).pipe(
+      map(response => Array.isArray(response) ? response : response.encomiendas || []),
+      tap(encomiendas => console.log('✅ Encomiendas asignadas:', encomiendas.length)),
       catchError(err => {
         console.error('❌ Error:', err);
-        const msg = err.error?.message || 'Error al actualizar';
-        this.error.set(msg);
-        this.error$.next(msg);
-        alert(`❌ ${msg}`);
         return throwError(() => err);
-      }),
-      finalize(() => {
-        this.cargando.set(false);
-        this.cargando$.next(false);
       })
     );
   }
 
   /**
-   * ✅ Actualiza el estado de una encomienda
+   * ✅ Confirmar entrega (chofer ingresa nombre y RUT opcional)
+   */
+  confirmarEntrega(encomiendaId: string, datos: {
+    nombreRecibidor: string;
+    rutRecibidor?: string;
+    ubicacionEntrega?: string;
+  }): Observable<any> {
+    console.log('✅ Confirmando entrega:', datos);
+
+    // ✅ Validar nombre (requerido)
+    if (!datos.nombreRecibidor || datos.nombreRecibidor.trim().length < 3) {
+      const error = 'Nombre de recibidor requerido';
+      return throwError(() => new Error(error));
+    }
+
+    return this.http.put<any>(
+      `${this.apiUrl}/encomiendas/${encomiendaId}/confirmar-entrega`,
+      datos
+    ).pipe(
+      tap(response => {
+        console.log('✅ Entrega confirmada:', response);
+        this.encomiendasCache$ = null; // Limpiar cache
+      }),
+      catchError(err => {
+        console.error('❌ Error:', err);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  /**
+   * ✅ Rastrear encomienda por código
+   */
+  rastrearPorCodigo(codigo: string): Observable<any> {
+    console.log('🔍 Rastreando código:', codigo);
+    
+    return this.http.get<any>(`${this.apiUrl}/encomiendas/rastrear/${codigo}`).pipe(
+      tap(response => console.log('✅ Encontrada:', response)),
+      catchError(err => {
+        console.error('❌ Error:', err);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  /**
+   * ✅ Obtener todas las encomiendas
+   */
+  obtenerTodas(): Observable<Encomienda[]> {
+    return this.http.get<any>(`${this.apiUrl}/encomiendas`).pipe(
+      map(response => response.encomiendas || response),
+      tap(encomiendas => console.log('✅ Encomiendas obtenidas:', encomiendas.length))
+    );
+  }
+
+  /**
+   * ✅ Obtener encomienda por ID
+   */
+  obtenerPorId(id: string): Observable<Encomienda> {
+    return this.http.get<any>(`${this.apiUrl}/encomiendas/${id}`).pipe(
+      map(response => response.encomienda || response),
+      tap(encomienda => console.log('✅ Encomienda:', encomienda))
+    );
+  }
+
+  /**
+   * ✅ Actualizar estado
    */
   actualizarEstado(id: string, estado: string): Observable<Encomienda> {
-    console.log(`📄 Cambiando estado a: ${estado}`);
-    return this.actualizarEncomienda(id, { estado: estado as any });
+    return this.http.patch<any>(`${this.apiUrl}/encomiendas/${id}/estado`, { estado }).pipe(
+      map(response => response.encomienda || response),
+      tap(() => {
+        this.encomiendasCache$ = null; // Limpiar cache
+      })
+    );
   }
 
   /**
-   * ✅ Marca encomienda como entregada
+   * ✅ Marcar como entregada
    */
   marcarEntregada(id: string, datos: any): Observable<any> {
-    this.cargando.set(true);
-    this.cargando$.next(true);
-    console.log('✅ Entregando:', id);
+    console.log('✅ Marcando como entregada:', id);
 
-    return this.http.patch<any>(`${this.apiUrl}/encomiendas/${id}/entregar`, datos).pipe(
-      tap(e => {
-        console.log('✅ Confirmada:', e);
-        const encomienda = e.encomienda || e;
-        const lista = this.encomiendas().map(x => x._id === id ? encomienda : x);
-        this.encomiendas.set(lista);
-        this.encomiendas$.next(lista);
-        this.encomiendasCache$ = null; // ✅ Limpiar cache
-        alert('✅ Entrega confirmada');
+    return this.http.put<any>(`${this.apiUrl}/encomiendas/${id}/confirmar-entrega`, datos).pipe(
+      tap(response => {
+        console.log('✅ Confirmada:', response);
+        this.encomiendasCache$ = null;
       }),
       catchError(err => {
         console.error('❌ Error:', err);
-        const msg = err.error?.message || 'Error';
-        this.error.set(msg);
-        this.error$.next(msg);
-        alert(`❌ ${msg}`);
         return throwError(() => err);
-      }),
-      finalize(() => {
-        this.cargando.set(false);
-        this.cargando$.next(false);
       })
     );
   }
 
   /**
-   * ✅ Elimina una encomienda
+   * ✅ Obtener encomiendas por estado
    */
-  eliminarEncomienda(id: string): Observable<any> {
-    this.cargando.set(true);
-    this.cargando$.next(true);
-    console.log('🗑️ Eliminando:', id);
-
-    return this.http.delete(`${this.apiUrl}/encomiendas/${id}`).pipe(
-      tap(() => {
-        console.log('✅ Eliminada');
-        const lista = this.encomiendas().filter(e => e._id !== id);
-        this.encomiendas.set(lista);
-        this.encomiendas$.next(lista);
-        this.encomiendasCache$ = null; // ✅ Limpiar cache
-        alert('✅ Eliminada');
-      }),
-      catchError(err => {
-        console.error('❌ Error:', err);
-        const msg = err.error?.message || 'Error';
-        this.error.set(msg);
-        this.error$.next(msg);
-        alert(`❌ ${msg}`);
-        return throwError(() => err);
-      }),
-      finalize(() => {
-        this.cargando.set(false);
-        this.cargando$.next(false);
-      })
+  obtenerPorEstado(estado: string): Observable<Encomienda[]> {
+    return this.http.get<any>(`${this.apiUrl}/encomiendas?estado=${estado}`).pipe(
+      map(response => response.encomiendas || [])
     );
   }
 
   /**
-   * ✅ Filtra encomiendas por estado
-   */
-  filtrarPorEstado(estado: string): Observable<Encomienda[]> {
-    console.log('🔎 Filtrando:', estado);
-    this.encomiendasCache$ = null; // ✅ Limpiar cache para nuevo filtro
-    return this.cargarEncomiendas(estado);
-  }
-
-  /**
-   * ✅ Obtiene encomiendas de un chofer
+   * ✅ Obtener encomiendas de un chofer
    */
   obtenerEncomiendasChofer(choferId: string): Observable<Encomienda[]> {
     console.log('🚗 Del chofer:', choferId);
@@ -332,80 +265,15 @@ export class EncomiendaService {
     ).pipe(
       map(response => response.encomiendas),
       tap(encomiendas => console.log('✅ Obtenidas:', encomiendas.length)),
-      catchError(err => {
-        console.error('❌ Error:', err);
-        return throwError(() => err);
-      })
+      catchError(err => throwError(() => err))
     );
   }
 
   /**
-   * ✅ Asigna chofer a una encomienda
-   */
-  asignarChofer(encomiendaId: string, choferId: string): Observable<Encomienda> {
-    console.log('👤 Asignando:', choferId);
-    return this.http.patch<Encomienda>(
-      `${this.apiUrl}/encomiendas/${encomiendaId}/chofer`,
-      { choferId }
-    ).pipe(
-      tap(e => {
-        console.log('✅ Asignado');
-        const lista = this.encomiendas().map(x => x._id === encomiendaId ? e : x);
-        this.encomiendas.set(lista);
-        this.encomiendas$.next(lista);
-        this.encomiendasCache$ = null; // ✅ Limpiar cache
-      }),
-      catchError(err => {
-        console.error('❌ Error:', err);
-        return throwError(() => err);
-      })
-    );
-  }
-
-  /**
-   * ✅ Exporta a CSV
-   */
-  exportarCSV(encomiendas?: Encomienda[]): void {
-    const lista = encomiendas || this.encomiendas();
-    console.log('📥 Exportando:', lista.length);
-
-    const headers = ['Código', 'Remitente', 'Destinatario', 'Valor', 'Estado', 'Fecha'];
-    const data = lista.map(e => [
-      e.codigoSeguimiento,
-      e.remitente.nombre,
-      e.destinatario.nombre,
-      e.valor,
-      e.estado,
-      new Date(e.fechaCreacion || '').toLocaleDateString()
-    ]);
-
-    const csv = [headers, ...data].map(row => row.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-
-    link.setAttribute('href', url);
-    link.setAttribute('download', `encomiendas-${new Date().toISOString().slice(0, 10)}.csv`);
-    link.style.visibility = 'hidden';
-
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    console.log('✅ Descargado');
-  }
-
-  /**
-   * ✅ Limpia errores
+   * ✅ Limpiar error
    */
   limpiarError(): void {
     this.error.set(null);
     this.error$.next(null);
-  }
-
-  /**
-   * ✅ Genera código de seguimiento
-   */
-  private generarCodigo(): string {
-    return 'ENC' + Math.random().toString(36).substr(2, 9).toUpperCase();
   }
 }

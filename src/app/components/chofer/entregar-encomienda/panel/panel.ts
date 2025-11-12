@@ -1,7 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../../../services/auth.service';
 import { EncomiendaService } from '../../../../services/encomienda.service';
 
@@ -12,92 +14,173 @@ import { EncomiendaService } from '../../../../services/encomienda.service';
   templateUrl: './panel.html',
   styleUrls: ['./panel.css']
 })
-export class ChoferPanelComponent implements OnInit {
+export class ChoferPanelComponent implements OnInit, OnDestroy {
   usuario: any = null;
   encomiendas: any[] = [];
+  encomiendasFiltradas: any[] = [];
   loading = false;
-  formEntrega!: FormGroup;
-  entregaSeleccionada: any = null;
+  error = '';
+  success = '';
+  filtroEstado = 'asignado'; // Por defecto mostrar asignadas
+  
+  private destroy$ = new Subject<void>();
 
   constructor(
     private authService: AuthService,
     private encomiendaService: EncomiendaService,
-    private fb: FormBuilder,
     private router: Router
-  ) {
-    this.initForm();
-  }
+  ) {}
 
   ngOnInit() {
-    this.usuario = this.authService.currentUser();
-    if (!this.usuario || this.usuario.rol !== 'chofer') {
+    // ✅ Verificar autenticación
+    if (!this.authService.estaAutenticado()) {
       this.router.navigate(['/login']);
       return;
     }
+
+    this.usuario = this.authService.obtenerUsuario();
+
+    // ✅ Verificar que sea chofer
+    if (this.usuario?.rol !== 'chofer') {
+      this.error = 'Solo los choferes pueden acceder aquí';
+      setTimeout(() => this.router.navigate(['/login']), 2000);
+      return;
+    }
+
+    console.log('🚗 Chofer:', this.usuario.nombre);
     this.cargarEncomiendas();
   }
 
-  initForm() {
-    this.formEntrega = this.fb.group({
-      nombreRecibidor: ['', Validators.required],
-      rutRecibidor: [''],
-      notas: ['']
-    });
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
- cargarEncomiendas() {
-  this.loading = true;
-  this.encomiendaService.obtenerEncomiendas().subscribe({
-    next: (response: any) => {
-      if (response.success && response.encomiendas) {
-        this.encomiendas = response.encomiendas.filter((e: any) => e.estado === 'en_transito');
-      } else {
-        this.encomiendas = [];
-      }
-      this.loading = false;
-    },
-    error: (err: any) => {
-      console.error('Error:', err);
-      this.encomiendas = [];
-      this.loading = false;
-    }
-  });
-}
-
-  seleccionarEntrega(encomienda: any) {
-    this.entregaSeleccionada = encomienda;
-  }
-
-  confirmarEntrega() {
-    if (this.formEntrega.invalid || !this.entregaSeleccionada) return;
-
+  /**
+   * ✅ Cargar encomiendas del chofer
+   */
+  cargarEncomiendas() {
     this.loading = true;
-    const datos = {
-      nombreRecibidor: this.formEntrega.value.nombreRecibidor,
-      rutRecibidor: this.formEntrega.value.rutRecibidor,
-      notas: this.formEntrega.value.notas
-    };
+    this.error = '';
 
-    this.encomiendaService.marcarEntregada(this.entregaSeleccionada.id, datos).subscribe({
-      next: () => {
-        this.loading = false;
-        this.formEntrega.reset();
-        this.entregaSeleccionada = null;
-        this.cargarEncomiendas();
-      },
-      error: (err) => {
-        console.error('Error:', err);
-        this.loading = false;
-      }
-    });
+    console.log('📦 Cargando encomiendas asignadas al chofer:', this.usuario.id);
+
+    // ✅ Obtener encomiendas asignadas a este chofer
+    this.encomiendaService.obtenerAsignadas(this.usuario.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (encomiendas) => {
+          this.loading = false;
+          this.encomiendas = encomiendas;
+          this.filtrarEncomiendas();
+          console.log('✅ Encomiendas cargadas:', encomiendas.length);
+        },
+        error: (err) => {
+          this.loading = false;
+          this.error = err.error?.message || 'Error al cargar encomiendas';
+          this.encomiendas = [];
+          console.error('❌ Error:', err);
+        }
+      });
   }
 
-  cancelar() {
-    this.entregaSeleccionada = null;
-    this.formEntrega.reset();
+  /**
+   * ✅ Filtrar encomiendas por estado
+   */
+  filtrarEncomiendas() {
+    if (this.filtroEstado === 'todas') {
+      this.encomiendasFiltradas = this.encomiendas;
+    } else {
+      this.encomiendasFiltradas = this.encomiendas.filter(
+        e => e.estado === this.filtroEstado
+      );
+    }
+    console.log('🔍 Filtradas:', this.encomiendasFiltradas.length);
   }
 
+  /**
+   * ✅ Cambiar filtro
+   */
+  cambiarFiltro(estado: string) {
+    this.filtroEstado = estado;
+    this.filtrarEncomiendas();
+  }
+
+  /**
+   * ✅ Ir a entregar una encomienda
+   */
+  irAEntregar(encomienda: any) {
+    console.log('🚗 Entregando:', encomienda.codigoSeguimiento);
+    this.router.navigate(['/chofer/entregar', encomienda._id]);
+  }
+
+  /**
+   * ✅ Logout
+   */
   logout() {
-    this.authService.logout();
+    if (confirm('¿Deseas cerrar sesión?')) {
+      console.log('🚪 Cerrando sesión...');
+      this.authService.logout();
+    }
+  }
+
+  /**
+   * ✅ Obtener badge de estado
+   */
+  getEstadoBadge(estado: string): string {
+    const badges: { [key: string]: string } = {
+      'asignado': 'bg-info',
+      'en_transito': 'bg-warning',
+      'entregada': 'bg-success',
+      'pendiente': 'bg-secondary'
+    };
+    return badges[estado] || 'bg-secondary';
+  }
+
+  /**
+   * ✅ Obtener texto de estado
+   */
+  getEstadoTexto(estado: string): string {
+    const textos: { [key: string]: string } = {
+      'asignado': 'Asignada',
+      'en_transito': 'En tránsito',
+      'entregada': 'Entregada',
+      'pendiente': 'Pendiente'
+    };
+    return textos[estado] || estado.toUpperCase();
+  }
+
+  /**
+   * ✅ Refrescar lista
+   */
+  refrescar() {
+    this.cargarEncomiendas();
+  }
+
+  /**
+   * ✅ GETTERS para contar por estado (evitar errores en template)
+   * 
+   * Estos getters se usan en el HTML para mostrar el contador de encomiendas
+   * por cada estado. Se necesitan para evitar usar .filter() directamente
+   * en los templates, lo cual causa errores de compilación.
+   */
+  get totalAsignadas(): number {
+    return this.encomiendas.filter(e => e.estado === 'asignado').length;
+  }
+
+  get totalEnTransito(): number {
+    return this.encomiendas.filter(e => e.estado === 'en_transito').length;
+  }
+
+  get totalEntregadas(): number {
+    return this.encomiendas.filter(e => e.estado === 'entregada').length;
+  }
+
+  get totalPendientes(): number {
+    return this.encomiendas.filter(e => e.estado === 'pendiente').length;
+  }
+
+  get totalEncomiendas(): number {
+    return this.encomiendas.length;
   }
 }

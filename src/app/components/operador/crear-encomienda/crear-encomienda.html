@@ -1,100 +1,305 @@
-<div class="container mt-4">
+<div class="container mt-5 mb-5">
   <div class="row">
-    <div class="col-md-8 mx-auto">
-      <h2>Nueva Encomienda</h2>
+    <div class="col-lg-10 mx-auto">
       
-      <form [formGroup]="formEncomienda" (ngSubmit)="onSubmit()">
-        <div class="card mb-3">
-          <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">Datos del Remitente</h5>
-          </div>
-          <div class="card-body">
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Nombre Remitente *</label>
-                <input type="text" class="form-control" formControlName="remitenteNombre">
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Teléfono</label>
-                <input type="tel" class="form-control" formControlName="remitenteTelefono">
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Ciudad *</label>
-                <input type="text" class="form-control" formControlName="remitenteCity">
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Dirección *</label>
-                <input type="text" class="form-control" formControlName="remitenteAddress">
-              </div>
-            </div>
-          </div>
+      <!-- HEADER -->
+      <div class="d-flex justify-content-between align-items-center mb-4 header-section">
+        <div>
+          <h2 class="mb-1">
+            <i class="fas fa-plus-circle"></i> Crear Nueva Encomienda
+          </h2>
+          <small class="text-muted">Ingresa los datos manualmente</small>
         </div>
-
-        <div class="card mb-3">
-          <div class="card-header bg-success text-white">
-            <h5 class="mb-0">Datos del Destinatario</h5>
-          </div>
-          <div class="card-body">
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Nombre Destinatario *</label>
-                <input type="text" class="form-control" formControlName="destinatarioNombre">
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Teléfono</label>
-                <input type="tel" class="form-control" formControlName="destinatarioTelefono">
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Ciudad *</label>
-                <input type="text" class="form-control" formControlName="destinatarioCity">
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Dirección *</label>
-                <input type="text" class="form-control" formControlName="destinatarioAddress">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card mb-3">
-          <div class="card-header bg-warning">
-            <h5 class="mb-0">Datos de la Encomienda</h5>
-          </div>
-          <div class="card-body">
-            <div class="mb-3">
-              <label class="form-label">Descripción *</label>
-              <textarea class="form-control" formControlName="descripcion" rows="3"></textarea>
-            </div>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Peso (kg)</label>
-                <input type="number" class="form-control" formControlName="peso" step="0.1">
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Valor ($) *</label>
-                <input type="number" class="form-control" formControlName="valor" required>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
-        <div *ngIf="success" class="alert alert-success">
-          ¡Encomienda creada! Código: <strong>{{ codigoSeguimiento }}</strong>
-        </div>
-
-        <div class="d-flex gap-2">
-          <button type="submit" class="btn btn-primary" [disabled]="loading">
-            <span *ngIf="!loading">Crear Encomienda</span>
-            <span *ngIf="loading">Guardando...</span>
+        <div class="user-info">
+          <span class="me-3">👤 {{ usuario?.nombre }}</span>
+          <button class="btn btn-danger btn-sm" (click)="logout()">
+            <i class="fas fa-sign-out-alt"></i> Salir
           </button>
-          <button type="button" class="btn btn-secondary" (click)="volver()">Cancelar</button>
+        </div>
+      </div>
+
+      <!-- ALERTAS -->
+      <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle"></i>
+        <strong>Error:</strong> {{ error }}
+        <button type="button" class="btn-close" (click)="error = ''"></button>
+      </div>
+
+      <div *ngIf="success" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle"></i>
+        {{ success }}
+        <button type="button" class="btn-close" (click)="success = ''"></button>
+      </div>
+
+      <!-- FORMULARIO -->
+      <form [formGroup]="formEncomienda" (ngSubmit)="onSubmit()">
+        
+        <!-- SECCIÓN 1: DATOS BÁSICOS -->
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+              <i class="fas fa-barcode"></i> Datos Básicos de la Encomienda
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">
+                  <strong>Código de Seguimiento</strong>
+                  <span class="text-danger">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  class="form-control"
+                  placeholder="ENC1234567890"
+                  formControlName="codigoSeguimiento"
+                  [class.is-invalid]="codigoInvalido"
+                >
+                <small class="text-muted d-block mt-1">
+                  💡 Mínimo 10 caracteres. Ej: ENC1234567890
+                </small>
+                <div class="invalid-feedback" *ngIf="codigoInvalido">
+                  Código inválido (mín. 10 caracteres)
+                </div>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">
+                  <strong>Valor Declarado ($)</strong>
+                  <span class="text-danger">*</span>
+                </label>
+                <input 
+                  type="number" 
+                  class="form-control"
+                  placeholder="50000"
+                  formControlName="valor"
+                  [class.is-invalid]="valorInvalido"
+                >
+                <small class="text-muted d-block mt-1">
+                  💡 Valor mínimo: $1.000
+                </small>
+                <div class="invalid-feedback" *ngIf="valorInvalido">
+                  Valor mínimo: $1.000
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">
+                  <strong>Peso (kg)</strong>
+                  <span class="text-danger">*</span>
+                </label>
+                <input 
+                  type="number" 
+                  step="0.1"
+                  class="form-control"
+                  placeholder="2.5"
+                  formControlName="peso"
+                  [class.is-invalid]="pesoInvalido"
+                >
+                <div class="invalid-feedback" *ngIf="pesoInvalido">
+                  Peso requerido
+                </div>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">
+                  <strong>Descripción</strong>
+                  <span class="text-danger">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  class="form-control"
+                  placeholder="Ej: Documentos, paquete, libros"
+                  formControlName="descripcion"
+                >
+                <small class="text-muted d-block mt-1">
+                  💡 Mínimo 10 caracteres
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 2: REMITENTE -->
+        <div class="card mb-4">
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+              <i class="fas fa-user"></i> Datos del Remitente
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Nombre <span class="text-danger">*</span></label>
+                <input 
+                  type="text" 
+                  class="form-control"
+                  placeholder="Ej: Juan García"
+                  formControlName="remitenteNombre"
+                >
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Teléfono <span class="text-danger">*</span></label>
+                <input 
+                  type="tel" 
+                  class="form-control"
+                  placeholder="+56912345678"
+                  formControlName="remitenteTelefono"
+                >
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Ciudad <span class="text-danger">*</span></label>
+                <input 
+                  type="text" 
+                  class="form-control"
+                  placeholder="Santiago"
+                  formControlName="remitenteCity"
+                >
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Dirección <span class="text-danger">*</span></label>
+                <input 
+                  type="text" 
+                  class="form-control"
+                  placeholder="Av. Libertad 1234"
+                  formControlName="remitenteAddress"
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 3: DESTINATARIO -->
+        <div class="card mb-4">
+          <div class="card-header bg-info text-white">
+            <h5 class="mb-0">
+              <i class="fas fa-map-pin"></i> Datos del Destinatario
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Nombre <span class="text-danger">*</span></label>
+                <input 
+                  type="text" 
+                  class="form-control"
+                  placeholder="Ej: María López"
+                  formControlName="destinatarioNombre"
+                >
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Teléfono <span class="text-danger">*</span></label>
+                <input 
+                  type="tel" 
+                  class="form-control"
+                  placeholder="+56987654321"
+                  formControlName="destinatarioTelefono"
+                >
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Ciudad <span class="text-danger">*</span></label>
+                <input 
+                  type="text" 
+                  class="form-control"
+                  placeholder="Valparaíso"
+                  formControlName="destinatarioCity"
+                >
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Dirección <span class="text-danger">*</span></label>
+                <input 
+                  type="text" 
+                  class="form-control"
+                  placeholder="Calle Principal 567"
+                  formControlName="destinatarioAddress"
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BOTONES -->
+        <div class="d-flex gap-2 mb-4">
+          <button 
+            type="submit" 
+            class="btn btn-primary btn-lg flex-grow-1"
+            [disabled]="loading || formEncomienda.invalid"
+          >
+            <span *ngIf="!loading">
+              <i class="fas fa-check"></i> Crear Encomienda
+            </span>
+            <span *ngIf="loading">
+              <span class="spinner-border spinner-border-sm me-2"></span>
+              Creando...
+            </span>
+          </button>
+
+          <button 
+            type="button" 
+            class="btn btn-secondary btn-lg"
+            (click)="limpiar()"
+          >
+            <i class="fas fa-redo"></i> Limpiar
+          </button>
+
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary btn-lg"
+            (click)="volver()"
+          >
+            <i class="fas fa-arrow-left"></i> Volver
+          </button>
         </div>
       </form>
+
+      <!-- ENCOMIENDAS CREADAS -->
+      <div *ngIf="encomiendasCreadas.length > 0" class="card">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">
+            <i class="fas fa-list"></i> Encomiendas Creadas Hoy ({{ encomiendasCreadas.length }})
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>Código</th>
+                  <th>Valor</th>
+                  <th>Destinatario</th>
+                  <th>Ciudad</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let enc of encomiendasCreadas">
+                  <td><strong>{{ enc.codigoSeguimiento }}</strong></td>
+                  <td>${{ enc.valor | number }}</td>
+                  <td>{{ enc.destinatario?.nombre }}</td>
+                  <td>{{ enc.destinatario?.ciudad }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="'bg-' + (enc.estado === 'entregada' ? 'success' : 'warning')">
+                      {{ enc.estado | uppercase }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

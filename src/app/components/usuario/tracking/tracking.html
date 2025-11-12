@@ -1,102 +1,260 @@
 <div class="container mt-5">
   <div class="row">
     <div class="col-md-8 mx-auto">
-      <div class="card">
-        <div class="card-header bg-primary text-white">
-          <h3 class="mb-0">Rastrear tu Encomienda</h3>
+      <!-- ✅ HEADER CON LOGOUT -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">📍 Rastreador de Encomiendas</h2>
+        <div>
+          <span class="me-3 text-muted">
+            👤 {{ usuario?.nombre }} ({{ usuario?.rol }})
+          </span>
+          <button 
+            type="button" 
+            class="btn btn-danger btn-sm"
+            (click)="logout()"
+            title="Cerrar sesión"
+          >
+            <i class="fas fa-sign-out-alt"></i> Salir
+          </button>
         </div>
+      </div>
+
+      <!-- ✅ CARD PRINCIPAL -->
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0">
+            <i class="fas fa-search"></i> Rastrear tu Encomienda
+          </h4>
+        </div>
+
         <div class="card-body">
+          <!-- ✅ FORMULARIO DE BÚSQUEDA -->
           <form [formGroup]="formTracking" (ngSubmit)="buscar()">
             <div class="input-group mb-3">
               <input 
                 type="text" 
                 class="form-control" 
-                placeholder="Ingresa tu código de seguimiento"
+                placeholder="Ingresa tu código de seguimiento (ej: ENC1234567)"
                 formControlName="codigo"
+                [disabled]="loading"
               >
-              <button class="btn btn-primary" type="submit" [disabled]="loading">
-                <span *ngIf="!loading">Buscar</span>
-                <span *ngIf="loading">Buscando...</span>
+              <button 
+                class="btn btn-primary" 
+                type="submit" 
+                [disabled]="loading || formTracking.invalid"
+              >
+                <span *ngIf="!loading">
+                  <i class="fas fa-search"></i> Buscar
+                </span>
+                <span *ngIf="loading">
+                  <span class="spinner-border spinner-border-sm me-2"></span>
+                  Buscando...
+                </span>
               </button>
             </div>
+            <small class="text-muted d-block">
+              💡 Ingresa el código de seguimiento que recibiste por email
+            </small>
           </form>
 
-          <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+          <!-- ✅ ALERTA DE ERROR -->
+          <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i>
+            <strong>Error:</strong> {{ error }}
+            <button 
+              type="button" 
+              class="btn-close" 
+              (click)="error = ''"
+              aria-label="Cerrar"
+            ></button>
+          </div>
 
-          <div *ngIf="encomienda" class="mt-4">
-            <div class="encomienda-header mb-4">
-              <h4>{{ encomienda.codigoSeguimiento }}</h4>
-              <span class="badge" [ngClass]="getEstadoBadge(encomienda.estado)">
-                {{ getEstadoTexto(encomienda.estado) }}
-              </span>
+          <!-- ✅ RESULTADOS DE BÚSQUEDA -->
+          <div *ngIf="encomienda" class="mt-4 fade-in">
+            <!-- Header de la encomienda -->
+            <div class="encomienda-header mb-4 p-3 bg-light rounded">
+              <div>
+                <h4 class="mb-1">
+                  <i class="fas fa-box"></i> {{ encomienda.codigoSeguimiento }}
+                </h4>
+                <small class="text-muted">
+                  Creado: {{ encomienda.fechaCreacion | date: 'dd/MM/yyyy HH:mm' }}
+                </small>
+              </div>
+              <div>
+                <span class="badge" [ngClass]="getEstadoBadge(encomienda.estado)" style="font-size: 1rem;">
+                  {{ getEstadoTexto(encomienda.estado) }}
+                </span>
+              </div>
             </div>
 
             <!-- Barra de progreso -->
-            <div class="progress mb-4" style="height: 25px;">
-              <div 
-                class="progress-bar" 
-                [style.width.%]="encomienda.porcentajeEntrega"
-              >
-                {{ encomienda.porcentajeEntrega }}%
+            <div class="mb-4">
+              <div class="d-flex justify-content-between mb-2">
+                <label class="text-muted">Progreso de entrega:</label>
+                <span class="badge bg-primary">{{ encomienda.porcentajeEntrega || 0 }}%</span>
+              </div>
+              <div class="progress" style="height: 25px;">
+                <div 
+                  class="progress-bar bg-success" 
+                  [style.width.%]="encomienda.porcentajeEntrega || 0"
+                  role="progressbar"
+                >
+                  <span class="progress-text">{{ encomienda.porcentajeEntrega || 0 }}%</span>
+                </div>
               </div>
             </div>
 
-            <!-- Información de la encomienda -->
+            <!-- Información de remitente y destinatario -->
             <div class="row mb-4">
               <div class="col-md-6">
-                <h6 class="text-muted">Remitente</h6>
-                <p>
-                  <strong>{{ encomienda.remitente.nombre }}</strong><br>
-                  {{ encomienda.remitente.direccion }}<br>
-                  {{ encomienda.remitente.ciudad }}
-                </p>
+                <div class="card border-0 bg-light">
+                  <div class="card-body">
+                    <h6 class="card-title text-muted mb-2">
+                      <i class="fas fa-user"></i> Remitente
+                    </h6>
+                    <p class="mb-1">
+                      <strong>{{ encomienda.remitente?.nombre }}</strong>
+                    </p>
+                    <p class="mb-1 text-muted small">
+                      {{ encomienda.remitente?.direccion }}<br>
+                      {{ encomienda.remitente?.ciudad }}
+                    </p>
+                    <p class="mb-0 text-muted small" *ngIf="encomienda.remitente?.telefono">
+                      <i class="fas fa-phone"></i> {{ encomienda.remitente?.telefono }}
+                    </p>
+                  </div>
+                </div>
               </div>
+
               <div class="col-md-6">
-                <h6 class="text-muted">Destinatario</h6>
-                <p>
-                  <strong>{{ encomienda.destinatario.nombre }}</strong><br>
-                  {{ encomienda.destinatario.direccion }}<br>
-                  {{ encomienda.destinatario.ciudad }}
-                </p>
+                <div class="card border-0 bg-light">
+                  <div class="card-body">
+                    <h6 class="card-title text-muted mb-2">
+                      <i class="fas fa-map-pin"></i> Destinatario
+                    </h6>
+                    <p class="mb-1">
+                      <strong>{{ encomienda.destinatario?.nombre }}</strong>
+                    </p>
+                    <p class="mb-1 text-muted small">
+                      {{ encomienda.destinatario?.direccion }}<br>
+                      {{ encomienda.destinatario?.ciudad }}
+                    </p>
+                    <p class="mb-0 text-muted small" *ngIf="encomienda.destinatario?.telefono">
+                      <i class="fas fa-phone"></i> {{ encomienda.destinatario?.telefono }}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
+            <!-- Información adicional -->
             <div class="row mb-4">
               <div class="col-md-4">
-                <h6 class="text-muted">Descripción</h6>
-                <p>{{ encomienda.descripcion }}</p>
+                <div class="card border-0 bg-light">
+                  <div class="card-body text-center">
+                    <h6 class="card-title text-muted mb-2">Descripción</h6>
+                    <p class="mb-0">{{ encomienda.descripcion || 'N/A' }}</p>
+                  </div>
+                </div>
               </div>
               <div class="col-md-4">
-                <h6 class="text-muted">Peso</h6>
-                <p>{{ encomienda.peso }} kg</p>
+                <div class="card border-0 bg-light">
+                  <div class="card-body text-center">
+                    <h6 class="card-title text-muted mb-2">Peso</h6>
+                    <p class="mb-0">{{ encomienda.peso || 'N/A' }} kg</p>
+                  </div>
+                </div>
               </div>
               <div class="col-md-4">
-                <h6 class="text-muted">Valor</h6>
-                <p>${{ encomienda.valor | number }}</p>
+                <div class="card border-0 bg-light">
+                  <div class="card-body text-center">
+                    <h6 class="card-title text-muted mb-2">Valor</h6>
+                    <p class="mb-0 text-success fw-bold">${{ encomienda.valor | number }}</p>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <!-- Historial de tracking -->
-            <h5 class="mb-3">Historial de Seguimiento</h5>
-            <div class="timeline">
+            <!-- Información del chofer -->
+            <div *ngIf="encomienda.chofer" class="alert alert-info mb-4">
+              <div class="d-flex align-items-center">
+                <i class="fas fa-truck me-2 fa-lg"></i>
+                <div>
+                  <strong>Chofer Asignado:</strong><br>
+                  {{ encomienda.chofer.nombre }} 
+                  <span *ngIf="encomienda.chofer.telefono" class="text-muted">
+                    - {{ encomienda.chofer.telefono }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Historial de seguimiento -->
+            <h5 class="mb-3 mt-4">
+              <i class="fas fa-history"></i> Historial de Seguimiento
+            </h5>
+
+            <div class="timeline" *ngIf="historial.length > 0; else noHistory">
               <div *ngFor="let evento of historial; let last = last" class="timeline-item">
                 <div class="timeline-marker" [ngClass]="'estado-' + evento.estado"></div>
                 <div class="timeline-content">
-                  <h6>{{ getEstadoTexto(evento.estado) }}</h6>
-                  <p class="text-muted">{{ evento.fecha | date: 'medium' }}</p>
-                  <p>{{ evento.descripcion }}</p>
-                  <small *ngIf="evento.nombreRecibidor" class="text-success">
-                    ✓ Recibido por: {{ evento.nombreRecibidor }}
+                  <div class="d-flex justify-content-between">
+                    <h6 class="mb-1">{{ getEstadoTexto(evento.estado) }}</h6>
+                    <small class="text-muted">
+                      {{ evento.fecha | date: 'dd/MM/yyyy HH:mm' }}
+                    </small>
+                  </div>
+                  <p class="mb-2">{{ evento.descripcion }}</p>
+                  <div *ngIf="evento.ubicacion" class="small text-muted mb-2">
+                    📍 <strong>Ubicación:</strong> {{ evento.ubicacion }}
+                  </div>
+                  <small *ngIf="evento.nombreRecibidor" class="text-success d-block">
+                    <i class="fas fa-check-circle"></i> Recibido por: {{ evento.nombreRecibidor }}
                   </small>
                 </div>
               </div>
             </div>
 
-            <div *ngIf="encomienda.chofer" class="alert alert-info mt-3">
-              <strong>Chofer asignado:</strong> {{ encomienda.chofer.nombre }} - {{ encomienda.chofer.telefono }}
+            <!-- Sin historial -->
+            <ng-template #noHistory>
+              <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Aún no hay eventos registrados para esta encomienda.
+              </div>
+            </ng-template>
+
+            <!-- Botones de acción -->
+            <div class="mt-4 d-flex gap-2">
+              <button 
+                type="button" 
+                class="btn btn-secondary"
+                (click)="limpiar()"
+              >
+                <i class="fas fa-redo"></i> Nueva Búsqueda
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-outline-secondary"
+                (click)="logout()"
+              >
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+              </button>
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- ✅ AYUDA -->
+      <div class="alert alert-light mt-4 border">
+        <h6 class="mb-2">
+          <i class="fas fa-question-circle"></i> ¿Necesitas Ayuda?
+        </h6>
+        <ul class="mb-0 small">
+          <li>El código de seguimiento se envía por correo electrónico al crear la encomienda</li>
+          <li>Puedes rastrear tu encomienda en tiempo real</li>
+          <li>El estado se actualiza automáticamente cuando hay cambios</li>
+          <li>Si tienes problemas, contacta a nuestro soporte</li>
+        </ul>
       </div>
     </div>
   </div>

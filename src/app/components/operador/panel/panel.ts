@@ -57,7 +57,7 @@ export class OperadorPanelComponent implements OnInit {
     this.loading = true;
     this.encomiendaService.obtenerEncomiendas().subscribe({
       next: (res) => {
-        this.encomiendas = res || [];
+        this.encomiendas = res.encomiendas || [];
         this.loading = false;
       },
       error: (err) => {
